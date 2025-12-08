@@ -1,0 +1,1175 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Glowee Financial Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f0f1e 0%, #1a1a2e 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        .header {
+            margin-bottom: 40px;
+            padding-bottom: 30px;
+            border-bottom: 2px solid rgba(147, 112, 219, 0.2);
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            background: linear-gradient(135deg, #9370db 0%, #6a5acd 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            color: #a0a0a0;
+            font-size: 1em;
+        }
+
+        /* KPI Cards */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .kpi-card {
+            background: rgba(147, 112, 219, 0.08);
+            border: 1px solid rgba(147, 112, 219, 0.2);
+            border-radius: 12px;
+            padding: 25px;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .kpi-card:hover {
+            border-color: rgba(147, 112, 219, 0.5);
+            background: rgba(147, 112, 219, 0.12);
+            transform: translateY(-5px);
+        }
+
+        .kpi-label {
+            font-size: 0.9em;
+            color: #9370db;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .kpi-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #ffffff;
+            margin-bottom: 8px;
+        }
+
+        .kpi-change {
+            font-size: 0.85em;
+            color: #a0a0a0;
+        }
+
+        .positive {
+            color: #4ade80;
+        }
+
+        .negative {
+            color: #f87171;
+        }
+
+        /* Charts Grid */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .chart-container {
+            background: rgba(147, 112, 219, 0.08);
+            border: 1px solid rgba(147, 112, 219, 0.2);
+            border-radius: 12px;
+            padding: 25px;
+            backdrop-filter: blur(10px);
+        }
+
+        .chart-title {
+            font-size: 1.3em;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .chart-icon {
+            font-size: 1.2em;
+        }
+
+        .chart-wrapper {
+            position: relative;
+            height: 350px;
+        }
+
+        /* Full Width Chart */
+        .full-width {
+            grid-column: 1 / -1;
+        }
+
+        .chart-wrapper-full {
+            position: relative;
+            height: 400px;
+        }
+
+        /* Table */
+        .table-container {
+            background: rgba(147, 112, 219, 0.08);
+            border: 1px solid rgba(147, 112, 219, 0.2);
+            border-radius: 12px;
+            padding: 25px;
+            backdrop-filter: blur(10px);
+            overflow-x: auto;
+            grid-column: 1 / -1;
+        }
+
+        .table-title {
+            font-size: 1.3em;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #ffffff;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background: rgba(147, 112, 219, 0.15);
+            color: #9370db;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 2px solid rgba(147, 112, 219, 0.3);
+            text-transform: uppercase;
+            font-size: 0.85em;
+            letter-spacing: 0.5px;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid rgba(147, 112, 219, 0.1);
+            color: #e0e0e0;
+        }
+
+        tr:hover {
+            background: rgba(147, 112, 219, 0.05);
+        }
+
+        /* Loading & Error */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #a0a0a0;
+        }
+
+        .spinner {
+            border: 3px solid rgba(147, 112, 219, 0.2);
+            border-top: 3px solid #9370db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.5);
+            color: #fca5a5;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        /* Month Filter */
+        .filter-container {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .filter-label {
+            font-size: 0.95em;
+            color: #9370db;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        select {
+            padding: 12px 15px;
+            background: rgba(147, 112, 219, 0.1);
+            border: 1px solid rgba(147, 112, 219, 0.3);
+            color: #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        select:hover {
+            border-color: rgba(147, 112, 219, 0.6);
+            background: rgba(147, 112, 219, 0.15);
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #9370db;
+            background: rgba(147, 112, 219, 0.2);
+            box-shadow: 0 0 10px rgba(147, 112, 219, 0.3);
+        }
+
+        /* Breakdown Cards */
+        .breakdown-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .breakdown-card {
+            background: rgba(147, 112, 219, 0.08);
+            border: 1px solid rgba(147, 112, 219, 0.2);
+            border-radius: 12px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .breakdown-card-title {
+            font-size: 0.85em;
+            color: #9370db;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .breakdown-card-value {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #ffffff;
+            margin-bottom: 5px;
+        }
+
+        .breakdown-card-subtitle {
+            font-size: 0.8em;
+            color: #a0a0a0;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8em;
+            }
+
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .kpi-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .filter-container {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            select {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Glowee Financial Dashboard</h1>
+            <p>Přehled finančních metrik a trendů</p>
+        </div>
+
+        <div id="error-container"></div>
+
+        <!-- Loading State -->
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <p>Načítám data...</p>
+        </div>
+
+        <!-- Dashboard Content (hidden by default) -->
+        <div id="dashboard-content" style="display: none;">
+            <!-- Month Filter -->
+            <div class="filter-container">
+                <label class="filter-label">Filtrovat podle měsíce:</label>
+                <select id="monthFilter" onchange="handleMonthFilter()">
+                    <option value="">Všechny měsíce (Celkový přehled)</option>
+                </select>
+            </div>
+
+            <!-- Breakdown Cards (shown only for selected month) -->
+            <div id="breakdownSection" style="display: none;">
+                <div style="margin-bottom: 30px;">
+                    <h3 style="color: #9370db; font-size: 1.1em; margin-bottom: 15px;">📊 Rozložení příjmů za vybraný měsíc</h3>
+                    <div class="breakdown-grid">
+                        <div class="breakdown-card">
+                            <div class="breakdown-card-title">Tržby VO</div>
+                            <div class="breakdown-card-value" id="breakdown-revenueVO">-</div>
+                            <div class="breakdown-card-subtitle">Přímé prodeje</div>
+                        </div>
+                        <div class="breakdown-card">
+                            <div class="breakdown-card-title">Tržby MO</div>
+                            <div class="breakdown-card-value" id="breakdown-revenueMO">-</div>
+                            <div class="breakdown-card-subtitle">Přes partnery</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 30px;">
+                    <h3 style="color: #f87171; font-size: 1.1em; margin-bottom: 15px;">💰 Rozložení nákladů za vybraný měsíc</h3>
+                    <div class="breakdown-grid">
+                        <div class="breakdown-card">
+                            <div class="breakdown-card-title">Náklady COGS VO</div>
+                            <div class="breakdown-card-value" id="breakdown-costsVO">-</div>
+                            <div class="breakdown-card-subtitle">Náklady přímých prodejů</div>
+                        </div>
+                        <div class="breakdown-card">
+                            <div class="breakdown-card-title">Náklady COGS MO</div>
+                            <div class="breakdown-card-value" id="breakdown-costsMO">-</div>
+                            <div class="breakdown-card-subtitle">Náklady partnerských prodejů</div>
+                        </div>
+                        <div class="breakdown-card">
+                            <div class="breakdown-card-title">Logistika</div>
+                            <div class="breakdown-card-value" id="breakdown-logistika">-</div>
+                            <div class="breakdown-card-subtitle">Doprava a přeprava</div>
+                        </div>
+                        <div class="breakdown-card">
+                            <div class="breakdown-card-title">Perf. Marketing</div>
+                            <div class="breakdown-card-value" id="breakdown-perfMarketing">-</div>
+                            <div class="breakdown-card-subtitle">Výkonnostní marketing</div>
+                        </div>
+                        <div class="breakdown-card">
+                            <div class="breakdown-card-title">Marketing Mzdy</div>
+                            <div class="breakdown-card-value" id="breakdown-mktgMzdy">-</div>
+                            <div class="breakdown-card-subtitle">Mzdy marketingového týmu</div>
+                        </div>
+                        <div class="breakdown-card">
+                            <div class="breakdown-card-title">Ostatní Marketing</div>
+                            <div class="breakdown-card-value" id="breakdown-ostatniMarketing">-</div>
+                            <div class="breakdown-card-subtitle">Další marketingové náklady</div>
+                        </div>
+                        <div class="breakdown-card">
+                            <div class="breakdown-card-title">Mzda Šimon</div>
+                            <div class="breakdown-card-value" id="breakdown-mzdaSimon">-</div>
+                            <div class="breakdown-card-subtitle">Vedení a správa</div>
+                        </div>
+                        <div class="breakdown-card">
+                            <div class="breakdown-card-title">Software</div>
+                            <div class="breakdown-card-value" id="breakdown-software">-</div>
+                            <div class="breakdown-card-subtitle">Softwarové licence</div>
+                        </div>
+                        <div class="breakdown-card">
+                            <div class="breakdown-card-title">Web Development</div>
+                            <div class="breakdown-card-value" id="breakdown-webDevelopment">-</div>
+                            <div class="breakdown-card-subtitle">Vývoj a údržba webu</div>
+                        </div>
+                        <div class="breakdown-card">
+                            <div class="breakdown-card-title">Účetnictví</div>
+                            <div class="breakdown-card-value" id="breakdown-ucetnictvi">-</div>
+                            <div class="breakdown-card-subtitle">Účetní služby</div>
+                        </div>
+                        <div class="breakdown-card">
+                            <div class="breakdown-card-title">Jiné Náklady</div>
+                            <div class="breakdown-card-value" id="breakdown-jineNaklady">-</div>
+                            <div class="breakdown-card-subtitle">Ostatní výdaje</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 30px;">
+                    <div class="chart-container full-width">
+                        <div class="chart-title">
+                            <span class="chart-icon">📊</span>
+                            Rozložení nákladů
+                        </div>
+                        <div class="chart-wrapper-full">
+                            <canvas id="costBreakdownChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- KPI Cards -->
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <div class="kpi-label">Celkové tržby</div>
+                    <div class="kpi-value" id="total-revenue">-</div>
+                    <div class="kpi-change" id="revenue-change">-</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Celkové náklady</div>
+                    <div class="kpi-value" id="total-costs">-</div>
+                    <div class="kpi-change" id="costs-change">-</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Celkový zisk</div>
+                    <div class="kpi-value" id="total-profit">-</div>
+                    <div class="kpi-change" id="profit-change">-</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Průměrná marže</div>
+                    <div class="kpi-value" id="avg-margin">-</div>
+                    <div class="kpi-change">za sledované období</div>
+                </div>
+            </div>
+
+            <!-- Charts -->
+            <div class="charts-grid">
+                <!-- Revenue Chart -->
+                <div class="chart-container">
+                    <div class="chart-title">
+                        <span class="chart-icon">📈</span>
+                        Vývoj tržeb
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="revenueChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Costs Chart -->
+                <div class="chart-container">
+                    <div class="chart-title">
+                        <span class="chart-icon">💰</span>
+                        Vývoj nákladů
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="costsChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Profit Chart -->
+                <div class="chart-container">
+                    <div class="chart-title">
+                        <span class="chart-icon">💹</span>
+                        Vývoj zisku
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="profitChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Margin Chart -->
+                <div class="chart-container">
+                    <div class="chart-title">
+                        <span class="chart-icon">📊</span>
+                        Hrubá marže
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="marginChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Combined Chart -->
+                <div class="chart-container full-width">
+                    <div class="chart-title">
+                        <span class="chart-icon">📉</span>
+                        Porovnání tržeb, nákladů a zisku
+                    </div>
+                    <div class="chart-wrapper-full">
+                        <canvas id="combinedChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Monthly Table -->
+            <div class="table-container">
+                <div class="table-title">📋 Měsíční srovnání</div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Měsíc</th>
+                            <th>Tržby VO</th>
+                            <th>Tržby MO</th>
+                            <th>Celk. tržby</th>
+                            <th>Náklady</th>
+                            <th>Zisk</th>
+                            <th>Marže %</th>
+                        </tr>
+                    </thead>
+                    <tbody id="monthlyTable">
+                        <tr>
+                            <td colspan="7" style="text-align: center; padding: 20px;">Načítám data...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Když je server spuštěn, načítáme z API
+        // Když se otevře jako file://, doplníme fallback
+        const CSV_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+            ? '/api/sheets-data'
+            : `https://docs.google.com/spreadsheets/d/1DWC_T3KfRb1HPZCMeQRtzz-iKh9mo-90ZYR9Ji51pRs/export?format=csv`;
+
+        let chartInstances = {};
+        let allData = null;
+        let filteredMonthIndex = null;
+
+        async function fetchAndParseData() {
+            try {
+                console.log('📡 Načítám CSV z:', CSV_URL);
+                const response = await fetch(CSV_URL);
+                console.log('✅ Odpověď státu:', response.status);
+
+                if (!response.ok) throw new Error('Chyba při načítání dat: ' + response.status);
+
+                const csv = await response.text();
+                console.log('📄 CSV délka:', csv.length, 'znaků');
+                console.log('🔍 První řádky CSV:', csv.split('\n').slice(0, 5).join('\n'));
+
+                const parsed = parseCSV(csv);
+                console.log('✨ Parsovaná data:', parsed);
+                return parsed;
+            } catch (error) {
+                console.error('❌ Chyba:', error);
+                showError('Nepodařilo se načíst data ze Google Sheets. Zkontroluj připojení k internetu. Chyba: ' + error.message);
+                throw error;
+            }
+        }
+
+        function parseValue(str) {
+            if (!str) return 0;
+            // Odeber "Kč" a mezery, převeď na číslo
+            const cleaned = str.replace(/[^\d,.-]/g, '').replace(/\s/g, '').replace(',', '.');
+            return parseFloat(cleaned) || 0;
+        }
+
+        function parsePercentage(str) {
+            if (!str) return 0;
+            // Odeber "%" a čárku, převeď na číslo
+            const cleaned = str.replace(/[^\d,]/g, '').replace(',', '.');
+            return parseFloat(cleaned) || 0;
+        }
+
+        function parseCSV(csv) {
+            const lines = csv.trim().split('\n');
+            const headers = lines[0].split(',').map(h => h.trim());
+
+            // Extrahuj měsíce (01/2025 až 12/2025)
+            const months = [];
+            const monthIndices = [];
+
+            headers.forEach((header, index) => {
+                if (/^\d{2}\/\d{4}$/.test(header)) {
+                    months.push(header);
+                    monthIndices.push(index);
+                }
+            });
+
+            // Parse data
+            const data = {
+                months: months,
+                revenueVO: [],
+                revenueMO: [],
+                costsVO: [],
+                costsMO: [],
+                marginVO: [],
+                marginMO: [],
+                grossMargin: [],
+                logistika: [],
+                perfMarketing: [],
+                mktgMzdy: [],
+                ostatniMarketing: [],
+                mzdaSimon: [],
+                software: [],
+                webDevelopment: [],
+                ucetnictvi: [],
+                jineNaklady: [],
+                profit: [],
+                totalRevenue: [],
+                totalCosts: [],
+                margePercentage: []
+            };
+
+            lines.forEach((line, lineIndex) => {
+                if (lineIndex === 0) return; // Skip header
+
+                const values = line.split(',');
+                const label = values[0].trim();
+
+                // Přeskočit prázdné řádky
+                if (!label) return;
+
+                monthIndices.forEach((colIndex, monthIndex) => {
+                    const rawValue = values[colIndex] ? values[colIndex].trim() : '';
+
+                    // Kategorizuj řádky
+                    if (label === 'Tržby VO') {
+                        data.revenueVO[monthIndex] = parseValue(rawValue);
+                    } else if (label === 'Tržby MO') {
+                        data.revenueMO[monthIndex] = parseValue(rawValue);
+                    } else if (label === 'Náklady na prodané zboží VO') {
+                        data.costsVO[monthIndex] = parseValue(rawValue);
+                    } else if (label === 'Náklady na prodané zboží MO') {
+                        data.costsMO[monthIndex] = parseValue(rawValue);
+                    } else if (label === 'Hrubá marže I') {
+                        data.grossMargin[monthIndex] = parseValue(rawValue);
+                    } else if (label === 'Logistika') {
+                        data.logistika[monthIndex] = parseValue(rawValue);
+                    } else if (label === 'Perf. marketing') {
+                        data.perfMarketing[monthIndex] = parseValue(rawValue);
+                    } else if (label === 'Mktg mzdy') {
+                        data.mktgMzdy[monthIndex] = parseValue(rawValue);
+                    } else if (label === 'Ostatní marketing') {
+                        data.ostatniMarketing[monthIndex] = parseValue(rawValue);
+                    } else if (label === 'Mzda Šimon') {
+                        data.mzdaSimon[monthIndex] = parseValue(rawValue);
+                    } else if (label === 'Software') {
+                        data.software[monthIndex] = parseValue(rawValue);
+                    } else if (label === 'Web Development') {
+                        data.webDevelopment[monthIndex] = parseValue(rawValue);
+                    } else if (label === 'Účetnictví') {
+                        data.ucetnictvi[monthIndex] = parseValue(rawValue);
+                    } else if (label === 'Jiné náklady') {
+                        data.jineNaklady[monthIndex] = parseValue(rawValue);
+                    } else if (label === 'VH') {
+                        data.profit[monthIndex] = parseValue(rawValue);
+                    } else if (label === '% marže VO') {
+                        data.marginVO[monthIndex] = parsePercentage(rawValue);
+                    } else if (label === '% marže MO') {
+                        data.marginMO[monthIndex] = parsePercentage(rawValue);
+                    }
+                });
+            });
+
+            // Vypočítej celkové hodnoty
+            data.months.forEach((month, index) => {
+                data.totalRevenue[index] = (data.revenueVO[index] || 0) + (data.revenueMO[index] || 0);
+                // Všechny náklady dohromady
+                data.totalCosts[index] =
+                    (data.costsVO[index] || 0) +
+                    (data.costsMO[index] || 0) +
+                    (data.logistika[index] || 0) +
+                    (data.perfMarketing[index] || 0) +
+                    (data.mktgMzdy[index] || 0) +
+                    (data.ostatniMarketing[index] || 0) +
+                    (data.mzdaSimon[index] || 0) +
+                    (data.software[index] || 0) +
+                    (data.webDevelopment[index] || 0) +
+                    (data.ucetnictvi[index] || 0) +
+                    (data.jineNaklady[index] || 0);
+            });
+
+            return data;
+        }
+
+        function showError(message) {
+            const errorContainer = document.getElementById('error-container');
+            errorContainer.innerHTML = `<div class="error">${message}</div>`;
+        }
+
+        function formatCurrency(value) {
+            return new Intl.NumberFormat('cs-CZ', {
+                style: 'currency',
+                currency: 'CZK',
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            }).format(value);
+        }
+
+        function populateMonthFilter(data) {
+            const select = document.getElementById('monthFilter');
+            data.months.forEach((month, index) => {
+                const option = document.createElement('option');
+                option.value = index;
+                option.textContent = month;
+                select.appendChild(option);
+            });
+        }
+
+        function handleMonthFilter() {
+            const select = document.getElementById('monthFilter');
+            const selectedIndex = select.value;
+
+            if (selectedIndex === '') {
+                // Všechny měsíce - zobrazit původní přehled
+                filteredMonthIndex = null;
+                document.getElementById('breakdownSection').style.display = 'none';
+                updateKPIs(allData);
+                createCharts(allData);
+                updateMonthlyTable(allData);
+            } else {
+                // Filtrovat na konkrétní měsíc
+                filteredMonthIndex = parseInt(selectedIndex);
+                document.getElementById('breakdownSection').style.display = 'block';
+                updateFilteredView(allData, filteredMonthIndex);
+            }
+        }
+
+        function updateFilteredView(data, monthIndex) {
+            const month = data.months[monthIndex];
+            const revenueVO = data.revenueVO[monthIndex] || 0;
+            const revenueMO = data.revenueMO[monthIndex] || 0;
+            const costsVO = data.costsVO[monthIndex] || 0;
+            const costsMO = data.costsMO[monthIndex] || 0;
+            const logistika = data.logistika[monthIndex] || 0;
+            const perfMarketing = data.perfMarketing[monthIndex] || 0;
+            const mktgMzdy = data.mktgMzdy[monthIndex] || 0;
+            const ostatniMarketing = data.ostatniMarketing[monthIndex] || 0;
+            const mzdaSimon = data.mzdaSimon[monthIndex] || 0;
+            const software = data.software[monthIndex] || 0;
+            const webDevelopment = data.webDevelopment[monthIndex] || 0;
+            const ucetnictvi = data.ucetnictvi[monthIndex] || 0;
+            const jineNaklady = data.jineNaklady[monthIndex] || 0;
+
+            // Aktualizuj breakdown karty - příjmy
+            document.getElementById('breakdown-revenueVO').textContent = formatCurrency(revenueVO);
+            document.getElementById('breakdown-revenueMO').textContent = formatCurrency(revenueMO);
+
+            // Aktualizuj breakdown karty - náklady
+            document.getElementById('breakdown-costsVO').textContent = formatCurrency(costsVO);
+            document.getElementById('breakdown-costsMO').textContent = formatCurrency(costsMO);
+            document.getElementById('breakdown-logistika').textContent = formatCurrency(logistika);
+            document.getElementById('breakdown-perfMarketing').textContent = formatCurrency(perfMarketing);
+            document.getElementById('breakdown-mktgMzdy').textContent = formatCurrency(mktgMzdy);
+            document.getElementById('breakdown-ostatniMarketing').textContent = formatCurrency(ostatniMarketing);
+            document.getElementById('breakdown-mzdaSimon').textContent = formatCurrency(mzdaSimon);
+            document.getElementById('breakdown-software').textContent = formatCurrency(software);
+            document.getElementById('breakdown-webDevelopment').textContent = formatCurrency(webDevelopment);
+            document.getElementById('breakdown-ucetnictvi').textContent = formatCurrency(ucetnictvi);
+            document.getElementById('breakdown-jineNaklady').textContent = formatCurrency(jineNaklady);
+
+            // Aktualizuj KPI karty pro vybraný měsíc
+            const totalRev = revenueVO + revenueMO;
+            const totalCost = costsVO + costsMO + logistika + perfMarketing + mktgMzdy + ostatniMarketing + mzdaSimon + software + webDevelopment + ucetnictvi + jineNaklady;
+            const totalProf = totalRev - totalCost;
+            const margin = totalRev > 0 ? ((totalProf / totalRev) * 100).toFixed(1) : 0;
+
+            document.getElementById('total-revenue').textContent = formatCurrency(totalRev);
+            document.getElementById('total-costs').textContent = formatCurrency(totalCost);
+            document.getElementById('total-profit').textContent = formatCurrency(totalProf);
+            document.getElementById('avg-margin').textContent = margin + ' %';
+
+            const profitEl = document.getElementById('profit-change');
+            profitEl.textContent = `za měsíc ${month}`;
+            profitEl.className = totalProf >= 0 ? 'positive' : 'negative';
+
+            // Vytvořit filtrovaná data pro grafy
+            const filteredData = {
+                months: [month],
+                revenueVO: [revenueVO],
+                revenueMO: [revenueMO],
+                costsVO: [costsVO],
+                costsMO: [costsMO],
+                marginVO: [data.marginVO[monthIndex] || 0],
+                marginMO: [data.marginMO[monthIndex] || 0],
+                grossMargin: [data.grossMargin[monthIndex] || 0],
+                profit: [totalProf],
+                totalRevenue: [totalRev],
+                totalCosts: [totalCost],
+                margePercentage: [margin]
+            };
+
+            createCharts(filteredData);
+            createCostBreakdownChart(data, monthIndex);
+            updateMonthlyTableForMonth(data, monthIndex);
+        }
+
+        function updateMonthlyTableForMonth(data, monthIndex) {
+            const tbody = document.getElementById('monthlyTable');
+            tbody.innerHTML = '';
+
+            const month = data.months[monthIndex];
+            const rev = data.totalRevenue[monthIndex] || 0;
+            const cost = data.totalCosts[monthIndex] || 0;
+            const profit = (rev - cost) || 0;
+            const margin = rev > 0 ? ((profit / rev) * 100).toFixed(1) : 0;
+
+            const row = tbody.insertRow();
+            row.innerHTML = `
+                <td><strong>${month}</strong></td>
+                <td>${formatCurrency(data.revenueVO[monthIndex] || 0)}</td>
+                <td>${formatCurrency(data.revenueMO[monthIndex] || 0)}</td>
+                <td><strong>${formatCurrency(rev)}</strong></td>
+                <td>${formatCurrency(cost)}</td>
+                <td><span style="color: ${profit >= 0 ? '#4ade80' : '#f87171'}">${formatCurrency(profit)}</span></td>
+                <td>${margin}%</td>
+            `;
+        }
+
+        function updateKPIs(data) {
+            const totalRev = data.totalRevenue.reduce((a, b) => a + b, 0);
+            const totalCost = data.totalCosts.reduce((a, b) => a + b, 0);
+            const totalProf = data.profit.reduce((a, b) => a + b, 0);
+
+            const avgMargin = data.months.length > 0
+                ? ((totalRev - totalCost) / totalRev * 100).toFixed(1)
+                : 0;
+
+            const lastRevenue = data.totalRevenue[data.totalRevenue.length - 1];
+            const prevRevenue = data.totalRevenue[data.totalRevenue.length - 2] || lastRevenue;
+            const revenueChange = ((lastRevenue - prevRevenue) / prevRevenue * 100).toFixed(1);
+
+            document.getElementById('total-revenue').textContent = formatCurrency(totalRev);
+            document.getElementById('total-costs').textContent = formatCurrency(totalCost);
+            document.getElementById('total-profit').textContent = formatCurrency(totalProf);
+            document.getElementById('avg-margin').textContent = avgMargin + ' %';
+
+            const changeEl = document.getElementById('revenue-change');
+            changeEl.textContent = `${revenueChange > 0 ? '+' : ''}${revenueChange}% vs. předchozí měsíc`;
+            changeEl.className = revenueChange > 0 ? 'positive' : 'negative';
+        }
+
+        function createCharts(data) {
+            const chartConfig = {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: '#a0a0a0',
+                            font: { size: 12 }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        ticks: { color: '#a0a0a0' },
+                        grid: { color: 'rgba(147, 112, 219, 0.1)' }
+                    },
+                    x: {
+                        ticks: { color: '#a0a0a0' },
+                        grid: { color: 'rgba(147, 112, 219, 0.1)' }
+                    }
+                }
+            };
+
+            // Revenue Chart
+            if (chartInstances.revenue) chartInstances.revenue.destroy();
+            chartInstances.revenue = new Chart(document.getElementById('revenueChart'), {
+                type: 'line',
+                data: {
+                    labels: data.months,
+                    datasets: [
+                        {
+                            label: 'Tržby VO',
+                            data: data.revenueVO,
+                            borderColor: '#9370db',
+                            backgroundColor: 'rgba(147, 112, 219, 0.1)',
+                            tension: 0.3,
+                            fill: true
+                        },
+                        {
+                            label: 'Tržby MO',
+                            data: data.revenueMO,
+                            borderColor: '#6a5acd',
+                            backgroundColor: 'rgba(106, 90, 205, 0.1)',
+                            tension: 0.3,
+                            fill: true
+                        }
+                    ]
+                },
+                options: chartConfig
+            });
+
+            // Costs Chart
+            if (chartInstances.costs) chartInstances.costs.destroy();
+            chartInstances.costs = new Chart(document.getElementById('costsChart'), {
+                type: 'bar',
+                data: {
+                    labels: data.months,
+                    datasets: [
+                        {
+                            label: 'Náklady VO',
+                            data: data.costsVO,
+                            backgroundColor: 'rgba(248, 113, 113, 0.7)',
+                            borderColor: '#f87171',
+                            borderRadius: 6
+                        },
+                        {
+                            label: 'Náklady MO',
+                            data: data.costsMO,
+                            backgroundColor: 'rgba(239, 68, 68, 0.7)',
+                            borderColor: '#ef4444',
+                            borderRadius: 6
+                        }
+                    ]
+                },
+                options: chartConfig
+            });
+
+            // Profit Chart
+            if (chartInstances.profit) chartInstances.profit.destroy();
+            chartInstances.profit = new Chart(document.getElementById('profitChart'), {
+                type: 'line',
+                data: {
+                    labels: data.months,
+                    datasets: [{
+                        label: 'Zisk',
+                        data: data.profit,
+                        borderColor: '#4ade80',
+                        backgroundColor: 'rgba(74, 222, 128, 0.1)',
+                        tension: 0.3,
+                        fill: true,
+                        pointBackgroundColor: data.profit.map(v => v >= 0 ? '#4ade80' : '#f87171'),
+                        pointBorderColor: data.profit.map(v => v >= 0 ? '#4ade80' : '#f87171')
+                    }]
+                },
+                options: chartConfig
+            });
+
+            // Margin Chart
+            if (chartInstances.margin) chartInstances.margin.destroy();
+            chartInstances.margin = new Chart(document.getElementById('marginChart'), {
+                type: 'line',
+                data: {
+                    labels: data.months,
+                    datasets: [
+                        {
+                            label: 'Marže VO %',
+                            data: data.marginVO,
+                            borderColor: '#9370db',
+                            backgroundColor: 'rgba(147, 112, 219, 0.1)',
+                            tension: 0.3,
+                            fill: true
+                        },
+                        {
+                            label: 'Marže MO %',
+                            data: data.marginMO,
+                            borderColor: '#6a5acd',
+                            backgroundColor: 'rgba(106, 90, 205, 0.1)',
+                            tension: 0.3,
+                            fill: true
+                        }
+                    ]
+                },
+                options: chartConfig
+            });
+
+            // Combined Chart
+            if (chartInstances.combined) chartInstances.combined.destroy();
+            chartInstances.combined = new Chart(document.getElementById('combinedChart'), {
+                type: 'line',
+                data: {
+                    labels: data.months,
+                    datasets: [
+                        {
+                            label: 'Tržby',
+                            data: data.totalRevenue,
+                            borderColor: '#9370db',
+                            backgroundColor: 'rgba(147, 112, 219, 0.1)',
+                            tension: 0.3,
+                            yAxisID: 'y',
+                            fill: false,
+                            borderWidth: 2
+                        },
+                        {
+                            label: 'Náklady',
+                            data: data.totalCosts,
+                            borderColor: '#f87171',
+                            backgroundColor: 'rgba(248, 113, 113, 0.1)',
+                            tension: 0.3,
+                            yAxisID: 'y',
+                            fill: false,
+                            borderWidth: 2
+                        },
+                        {
+                            label: 'Zisk',
+                            data: data.profit,
+                            borderColor: '#4ade80',
+                            backgroundColor: 'rgba(74, 222, 128, 0.1)',
+                            tension: 0.3,
+                            yAxisID: 'y',
+                            fill: false,
+                            borderWidth: 2
+                        }
+                    ]
+                },
+                options: {
+                    ...chartConfig,
+                    scales: {
+                        ...chartConfig.scales,
+                        y: {
+                            ...chartConfig.scales.y,
+                            position: 'left'
+                        }
+                    }
+                }
+            });
+        }
+
+        function createCostBreakdownChart(data, monthIndex) {
+            const costsVO = data.costsVO[monthIndex] || 0;
+            const costsMO = data.costsMO[monthIndex] || 0;
+            const logistika = data.logistika[monthIndex] || 0;
+            const perfMarketing = data.perfMarketing[monthIndex] || 0;
+            const mktgMzdy = data.mktgMzdy[monthIndex] || 0;
+            const ostatniMarketing = data.ostatniMarketing[monthIndex] || 0;
+            const mzdaSimon = data.mzdaSimon[monthIndex] || 0;
+            const software = data.software[monthIndex] || 0;
+            const webDevelopment = data.webDevelopment[monthIndex] || 0;
+            const ucetnictvi = data.ucetnictvi[monthIndex] || 0;
+            const jineNaklady = data.jineNaklady[monthIndex] || 0;
+
+            const ctx = document.getElementById('costBreakdownChart');
+            if (!ctx) return;
+
+            if (chartInstances.costBreakdown) chartInstances.costBreakdown.destroy();
+
+            // Filtruj pouze náklady > 0
+            const costLabels = [];
+            const costValues = [];
+            const costColors = [
+                '#f87171', '#ef4444', '#dc2626', '#b91c1c',
+                '#7f1d1d', '#fca5a5', '#fecaca', '#fed7d7',
+                '#fee2e2', '#fef2f2', '#f5f5f5'
+            ];
+
+            const costs = [
+                { label: 'Náklady COGS VO', value: costsVO },
+                { label: 'Náklady COGS MO', value: costsMO },
+                { label: 'Logistika', value: logistika },
+                { label: 'Perf. Marketing', value: perfMarketing },
+                { label: 'Marketing Mzdy', value: mktgMzdy },
+                { label: 'Ostatní Marketing', value: ostatniMarketing },
+                { label: 'Mzda Šimon', value: mzdaSimon },
+                { label: 'Software', value: software },
+                { label: 'Web Development', value: webDevelopment },
+                { label: 'Účetnictví', value: ucetnictvi },
+                { label: 'Jiné Náklady', value: jineNaklady }
+            ];
+
+            costs.forEach((cost, index) => {
+                if (cost.value > 0) {
+                    costLabels.push(cost.label);
+                    costValues.push(cost.value);
+                }
+            });
+
+            chartInstances.costBreakdown = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: costLabels,
+                    datasets: [{
+                        data: costValues,
+                        backgroundColor: costColors.slice(0, costLabels.length),
+                        borderColor: 'rgba(15, 15, 30, 0.8)',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: {
+                                color: '#a0a0a0',
+                                font: { size: 11 },
+                                padding: 15,
+                                generateLabels: function(chart) {
+                                    const data = chart.data;
+                                    return data.labels.map((label, i) => ({
+                                        text: label + ': ' + formatCurrency(data.datasets[0].data[i]),
+                                        fillStyle: data.datasets[0].backgroundColor[i],
+                                        hidden: false,
+                                        index: i
+                                    }));
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateMonthlyTable(data) {
+            const tbody = document.getElementById('monthlyTable');
+            tbody.innerHTML = '';
+
+            data.months.forEach((month, index) => {
+                const row = tbody.insertRow();
+                const rev = data.totalRevenue[index] || 0;
+                const cost = data.totalCosts[index] || 0;
+                const profit = (rev - cost) || 0;
+                const margin = rev > 0 ? ((profit / rev) * 100).toFixed(1) : 0;
+
+                row.innerHTML = `
+                    <td><strong>${month}</strong></td>
+                    <td>${formatCurrency(data.revenueVO[index] || 0)}</td>
+                    <td>${formatCurrency(data.revenueMO[index] || 0)}</td>
+                    <td><strong>${formatCurrency(rev)}</strong></td>
+                    <td>${formatCurrency(cost)}</td>
+                    <td><span style="color: ${profit >= 0 ? '#4ade80' : '#f87171'}">${formatCurrency(profit)}</span></td>
+                    <td>${margin}%</td>
+                `;
+            });
+        }
+
+        async function initDashboard() {
+            try {
+                const data = await fetchAndParseData();
+                allData = data;
+
+                // Hide loading, show dashboard
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('dashboard-content').style.display = 'block';
+
+                // Populate month filter
+                populateMonthFilter(data);
+
+                // Populate dashboard
+                updateKPIs(data);
+                createCharts(data);
+                updateMonthlyTable(data);
+            } catch (error) {
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', initDashboard);
+    </script>
+</body>
+</html>
