@@ -55,6 +55,15 @@
             margin-bottom: 30px;
         }
 
+        .login-logo-text {
+            font-family: 'Archivo Narrow', sans-serif;
+            font-size: 48px;
+            font-weight: 700;
+            color: #222222;
+            margin-bottom: 30px;
+            letter-spacing: -1px;
+        }
+
         .login-title {
             font-family: 'Archivo Narrow', sans-serif;
             font-size: 28px;
@@ -126,6 +135,14 @@
             border-bottom: 2px solid #f2f2f2;
         }
 
+        .header-logo {
+            font-family: 'Archivo Narrow', sans-serif;
+            font-size: 32px;
+            font-weight: 700;
+            color: #222222;
+            letter-spacing: -1px;
+        }
+
         .header-logo img {
             height: 50px;
             width: auto;
@@ -183,7 +200,10 @@
             flex-shrink: 0;
             color: #ffffff;
             font-weight: bold;
-            font-size: 28px;
+            font-size: 18px;
+            line-height: 1.2;
+            text-align: center;
+            padding: 10px;
         }
 
         .metric-circle.blue {
@@ -509,7 +529,7 @@
     <!-- Login Screen -->
     <div id="loginScreen" class="login-screen">
         <div class="login-container">
-            <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 120'%3E%3Ctext x='50%' y='50%' font-size='80' font-weight='bold' fill='%23222' text-anchor='middle' dominant-baseline='middle'%3Eglowee%3C/text%3E%3C/svg%3E" alt="Glowee" class="login-logo">
+            <div class="login-logo-text">glowee</div>
             <div class="login-title">Glowee Dashboard</div>
             <div class="login-subtitle">Přístup jen pro autorizované uživatele</div>
             <input type="password" id="passwordInput" class="login-input" placeholder="Heslo" onkeypress="if(event.key==='Enter') handleLogin()">
@@ -522,7 +542,7 @@
         <!-- Header with Logo -->
         <div class="header">
             <div class="header-logo">
-                <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 120'%3E%3Ctext x='50%' y='50%' font-size='60' font-weight='bold' fill='%23222' text-anchor='middle' dominant-baseline='middle'%3Eglowee%3C/text%3E%3C/svg%3E" alt="Glowee">
+                glowee
             </div>
             <div class="header-title">
                 <h1>Financial Dashboard</h1>
@@ -1043,9 +1063,16 @@
             const prevRevenue = data.totalRevenue[data.totalRevenue.length - 2] || lastRevenue;
             const revenueChange = ((lastRevenue - prevRevenue) / prevRevenue * 100).toFixed(1);
 
-            document.getElementById('arrivals').textContent = formatCurrency(totalRev).replace('Kč', '').trim().split(' ')[0];
-            document.getElementById('departures').textContent = formatCurrency(totalCost).replace('Kč', '').trim().split(' ')[0];
-            document.getElementById('bookings').textContent = formatCurrency(totalProf).replace('Kč', '').trim().split(' ')[0];
+            // Format numbers compactly for metric circles
+            const formatCompact = (num) => {
+                if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+                if (num >= 1000) return (num / 1000).toFixed(0) + 'k';
+                return Math.round(num).toString();
+            };
+
+            document.getElementById('arrivals').textContent = formatCompact(totalRev);
+            document.getElementById('departures').textContent = formatCompact(totalCost);
+            document.getElementById('bookings').textContent = formatCompact(totalProf);
             document.getElementById('margin').textContent = avgMargin + '%';
 
             const changeEl = document.getElementById('revenueChange');
